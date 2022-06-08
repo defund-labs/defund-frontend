@@ -1,11 +1,14 @@
-FROM node:14.17.0-alpine3.10
-
+# build environment
+FROM node:lts-alpine3.13 as build
 WORKDIR /app
+ENV PATH /app/node_modules/.bin:$PATH
+COPY package.json .
+COPY package-lock.json .
+RUN npm ci --silent
+COPY . ./
 
-RUN npm i
-
-# Yarn is also pre-installed in the node alpine image.
-RUN yarn global add http-server
-
+# production environment
+FROM nginx:stable-alpine
+COPY --from=build /app/src /usr/share/nginx/html
 EXPOSE 80
-CMD http-server --address 0.0.0.0 --port 8080 --proxy http://localhost:8080? /app
+CMD ["nginx", "-g", "daemon off;"]
